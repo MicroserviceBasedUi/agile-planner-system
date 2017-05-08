@@ -28,7 +28,7 @@ Task("Start:Client")
   .IsDependentOn("Restore:Client")
   .Does(() =>
 {
-  Yarn.FromPath(clientDir).RunScript("start -- serve");
+  Yarn.FromPath(clientDir).RunScript("start -- webpack.server.hmr");
 });
 
 Task("Start")

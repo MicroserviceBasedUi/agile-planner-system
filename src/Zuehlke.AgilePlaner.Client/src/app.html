@@ -1,9 +1,8 @@
 <template>
-  <require from="./nav-bar.html"></require>
-  
-  <nav-bar router.bind="router"></nav-bar>
+    <link rel="import" href="http://localhost:9000/insight-header.html" >
+    <insight-header></insight-header>
 
-  <div class="page-host">
-    <router-view></router-view>
-  </div>
+    <div class="page-host">
+        <router-view></router-view>
+    </div>
 </template>

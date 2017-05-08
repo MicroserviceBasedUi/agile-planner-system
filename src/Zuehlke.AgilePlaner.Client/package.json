@@ -1,19 +1,15 @@
 {
-  "name": "skeleton-typescript-webpack",
+  "name": "agile-planer-system",
   "version": "1.0.0",
-  "description": "A starter kit for building a standard navigation-style app with Aurelia and Webpack.",
+  "description": "Aurelia client of the agile planer system",
   "main": "dist/app.bundle.js",
-  "repository": {
-    "url": "git+ssh://git@github.com/aurelia/skeleton-navigation.git",
-    "type": "git"
-  },
-  "author": "Bazyli Brzóska <bazyli.brzoska@gmail.com> (https://invent.life/)",
-  "license": "CC0-1.0",
+  "license": "MIT",
   "engines": {
     "node": ">= 6.0.0"
   },
   "scripts": {
     "start": "nps",
+	"build": "npm run start -- build",
     "test": "nps test"
   },
   "jest": {

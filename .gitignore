@@ -253,3 +253,10 @@ paket-files/
 
 # JavaScript
 *.js
+**/dist/
+
+# cake
+tools/
+
+#vscode
+.vscode/

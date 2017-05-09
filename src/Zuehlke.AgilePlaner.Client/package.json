@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "nps",
-	"build": "npm run start -- build",
+    "build": "npm run start -- build",
     "test": "nps test"
   },
   "jest": {
@@ -93,6 +93,7 @@
     "webpack-dev-server": "2.4.5"
   },
   "dependencies": {
+    "@types/highcharts": "^4.2.54",
     "aurelia-bootstrapper": "2.1.1",
     "aurelia-fetch-client": "1.1.2",
     "aurelia-framework": "1.1.2",
@@ -109,6 +110,7 @@
     "bluebird": "3.5.0",
     "bootstrap": "3.3.7",
     "font-awesome": "4.7.0",
+    "highcharts": "^5.0.11",
     "isomorphic-fetch": "2.2.1",
     "jquery": "3.2.1"
   }

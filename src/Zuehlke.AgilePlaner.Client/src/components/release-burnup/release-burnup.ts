@@ -34,73 +34,50 @@ export class ReleaseBurnup {
     }
 
     private static GetChartData(scope: ReleaseScope): ChartData {
-        let minVelocity: number = 0;
-        let maxVelocity: number = 0;
-        let avgVelocity: number = 0;
-
         const velocities: Array<number> = [];
         const sprintData: Array<SprintData> = [];
 
         const now = Date.now();
-        const completedSprints = scope.sprints.filter(s => Date.parse(s.completedAt) < now)
 
-        for (let i = 0; i < completedSprints.length; i++) {
-            let velocity: number = 0;
-            scope.sprints[i].stories.forEach(s => velocity += s.storyPoints);
+        if (scope.velocity) {
+            scope.sprints
+                .filter(sprint => sprint.startedAt >= scope.startSprint.startedAt)
+                .forEach(sprint => {
+                    const startDate = Date.parse(sprint.startedAt);
+                    const completeDate = Date.parse(sprint.completedAt);
 
-            avgVelocity += velocity;
+                    let minVel = scope.velocity !== null ? scope.velocity.min : 0;
+                    let avgVel = scope.velocity !== null ? scope.velocity.average : 0;
+                    let maxVel = scope.velocity !== null ? scope.velocity.max : 0;
 
-            if (i === 0) {
-                minVelocity = velocity;
-            }
+                    if (Date.parse(sprint.completedAt) < now) {
+                        let velocity: number = 0;
+                        sprint.stories.forEach(s => velocity += s.storyPoints);
 
-            if (velocity < minVelocity) {
-                minVelocity = velocity;
-            }
+                        minVel = velocity;
+                        avgVel = velocity;
+                        maxVel = velocity;
+                    }
 
-            if (velocity > maxVelocity) {
-                maxVelocity = velocity;
-            }
+                    sprintData.push(
+                        {
+                            sprint: sprint.name,
+                            startDate: startDate,
+                            completeDate: completeDate,
+                            minimumVelocity: minVel,
+                            averageVelocity: avgVel,
+                            maximumVelocity: maxVel
+                        }
+                    )
+                });
+
+            let data: ChartData = {
+                sprints: sprintData
+            };
+            return data;
         }
 
-        avgVelocity = Math.round(avgVelocity / completedSprints.length);
-
-        scope.sprints
-            .filter(sprint => sprint.startedAt >= scope.startSprint.startedAt)
-            .forEach(sprint => {
-            const startDate = Date.parse(sprint.startedAt);
-            const completeDate = Date.parse(sprint.completedAt);
-
-            let minVel = minVelocity;
-            let avgVel = avgVelocity;
-            let maxVel = maxVelocity;
-
-            if (Date.parse(sprint.completedAt) < now) {
-                let velocity: number = 0;
-                sprint.stories.forEach(s => velocity += s.storyPoints);
-
-                minVel = velocity;
-                avgVel = velocity;
-                maxVel = velocity;
-            }
-
-            sprintData.push(
-                {
-                    sprint: sprint.name,
-                    startDate: startDate,
-                    completeDate: completeDate,
-                    minimumVelocity: minVel,
-                    averageVelocity: avgVel,
-                    maximumVelocity: maxVel
-                }
-            )
-        });
-
-        let data: ChartData = {
-            sprints: sprintData
-        };
-
-        return data;
+        return { sprints: null };
     }
 
     private static createChartOptions(data: ChartData, scope: ReleaseScope, settings: Options): Options {
@@ -185,12 +162,12 @@ export class ReleaseBurnup {
 
         (<AxisOptions>settings.xAxis).plotLines = [];
         (<AxisOptions>settings.xAxis).plotLines.push({
-                    label: scope.endSprint.name,
-                    color: 'red', // Color value
-                    dashStyle: 'longdash', // Style of the plot line. Default to solid
-                    value: Date.parse(scope.endSprint.completedAt), // Value of where the line will appear
-                    width: 2 // Width of the line
-                });
+            label: scope.endSprint.name,
+            color: 'red', // Color value
+            dashStyle: 'longdash', // Style of the plot line. Default to solid
+            value: Date.parse(scope.endSprint.completedAt), // Value of where the line will appear
+            width: 2 // Width of the line
+        });
 
         return settings;
     };

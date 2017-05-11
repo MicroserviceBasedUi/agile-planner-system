@@ -23,12 +23,25 @@ export class ReleaseBacklog {
         });
 
         let response = await this.http.fetch('backlog/remaining');
-        this.pbis = (await response.json()).issues;
+        this.pbis = this.sortIssue((await response.json()).issues);
     };
+
+    sortIssue(issues: Array<Issue>): Array<Issue> {
+        return issues.sort((a, b) => {
+            if (a.key < b.key) {
+                return -1;
+            }
+            if (a.key > b.key) {
+                return 1;
+            }
+
+            return 0;
+        });
+    }
 }
 
 
-export interface StatusCategory {
+interface StatusCategory {
     self: string;
     id: number;
     key: string;
@@ -36,7 +49,7 @@ export interface StatusCategory {
     name: string;
 }
 
-export interface Status {
+interface Status {
     self: string;
     description: string;
     iconUrl: string;
@@ -45,14 +58,14 @@ export interface Status {
     statusCategory: StatusCategory;
 }
 
-export interface Fields {
+interface Fields {
     summary: string;
     customfield_10006: string[];
     status: Status;
     customfield_10004: number;
 }
 
-export interface Issue {
+interface Issue {
     expand: string;
     id: string;
     self: string;
@@ -60,13 +73,10 @@ export interface Issue {
     fields: Fields;
 }
 
-export interface RootObject {
+interface RootObject {
     expand: string;
     startAt: number;
     maxResults: number;
     total: number;
     issues: Issue[];
 }
-
-
-

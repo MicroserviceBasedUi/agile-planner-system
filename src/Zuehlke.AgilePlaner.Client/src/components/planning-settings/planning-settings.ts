@@ -1,4 +1,4 @@
-import { Sprint, Release, Story, ReleaseScope } from '../shared';
+import { Sprint, Release, Story, ReleaseScope, Issue } from '../shared';
 import { bindable, inject } from "aurelia-framework";
 import { HttpClient, json } from 'aurelia-fetch-client';
 import { EventAggregator } from 'aurelia-event-aggregator';
@@ -16,10 +16,9 @@ export class PlanningSettings {
     constructor(private http: HttpClient, private hub: EventAggregator) {
 
         const self = this;
-        this.loadSprints()
-            .then(sprints => {
-                self.availableSprints = sprints;
-                self.selectedEndSprint = sprints[0].name;
+        Promise.all([this.loadSprints(), this.loadRemainingStories()])
+            .then(values => {
+                self.prepareComponent(values[0], values[1]);
             });
     }
 
@@ -54,6 +53,16 @@ export class PlanningSettings {
     private loadSprints() : Promise<Array<Sprint>> {
         return this.http.fetch('http://localhost:8000/api/backlog/sprints')
             .then(response => <Promise<Array<Sprint>>>response.json())
+    }
+
+    private loadRemainingStories() : Promise<Array<Issue>> {
+        return this.http.fetch('http://localhost:8000/api/backlog/remaining')
+            .then(response => <Promise<Array<Issue>>>response.json())
+    }
+
+    private prepareComponent(sprints: Array<Sprint>, remaining: Array<Issue>) {
+        this.availableSprints = sprints;
+        this.selectedEndSprint = sprints[0].name;
     }
 
     private publishScope(): void {

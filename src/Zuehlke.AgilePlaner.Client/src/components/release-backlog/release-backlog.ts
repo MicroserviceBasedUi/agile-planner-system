@@ -2,6 +2,7 @@ import { bindable, inject } from "aurelia-framework";
 import { HttpClient, json } from 'aurelia-fetch-client';
 import { EventAggregator } from 'aurelia-event-aggregator';
 import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
+import { Issue } from '../shared';
 
 @inject(HttpClient, EventAggregator, 'backlogApiRoot')
 export class ReleaseBacklog {
@@ -69,9 +70,4 @@ export class ReleaseBacklog {
     }
 }
 
-interface Issue {
-    id: string;
-    summary: string;
-    storyPoints?: number;
-    color: string;
-}
+

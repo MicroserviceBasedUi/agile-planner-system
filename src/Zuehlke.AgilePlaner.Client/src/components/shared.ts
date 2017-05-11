@@ -26,6 +26,13 @@ export interface ReleaseScope {
     endSprint: Sprint;
 }
 
+export interface Issue {
+    id: string;
+    summary: string;
+    storyPoints?: number;
+    color: string;
+}
+
 export const DefaultBurndownChartOptions: Options = {
 
             chart: {

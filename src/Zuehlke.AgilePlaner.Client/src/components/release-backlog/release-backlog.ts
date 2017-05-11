@@ -7,70 +7,54 @@ import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
 export class ReleaseBacklog {
     pbis: Array<Issue>;
 
+    private minStoryPoints: number = 5;
+    private meanStoryPoints: number = 18;
+    private maxStoryPoints: number;
+
     constructor(private http: HttpClient, private evenAggregator: EventAggregator, backlogApiRoot: string) {
         this.http.configure(config => {
             config
                 .useStandardConfiguration()
                 .withBaseUrl(backlogApiRoot);
         });
+        this.evenAggregator.subscribe(ReleaseVelocityChanged, this.eventReceived);
+    }
+
+    eventReceived(event: ReleaseVelocityChanged): void {
+
+    }
+
+    async moveUp(pbi: Issue): Promise<void> {
+        const index = this.pbis.findIndex(item => pbi.id === item.id);
+
+        if (index === 0) return;
+
+        // POST it to the backend
+        const before = this.pbis[index - 1];
+        console.log(`PBI ${pbi.id} moved up before PBI ${before.id}`);
     }
 
     async created(): Promise<void> {
-        let response = await (await this.http.fetch('backlog/remaining')).json();
-        this.pbis = this.sortIssue(response.issues);
-    };
+        this.pbis = await (await this.http.fetch('backlog/remaining')).json();
 
-    sortIssue(issues: Array<Issue>): Array<Issue> {
-        return issues.sort((a, b) => {
-            if (a.key < b.key) {
-                return -1;
-            }
-            if (a.key > b.key) {
-                return 1;
-            }
+        let spCount = 0;
 
-            return 0;
+        this.pbis.forEach(pbi => {
+            spCount += pbi.storyPoints;
+            if (spCount <= this.minStoryPoints) {
+                pbi.color = 'rgba(62, 199, 6, 0.29)';
+            } else if (spCount <= this.meanStoryPoints) {
+                pbi.color = 'rgba(38, 38, 228, 0.52)';
+            } else {
+                pbi.color = 'rgba(255, 0, 0, 0.25)';
+            }
         });
-    }
-}
-
-
-interface StatusCategory {
-    self: string;
-    id: number;
-    key: string;
-    colorName: string;
-    name: string;
-}
-
-interface Status {
-    self: string;
-    description: string;
-    iconUrl: string;
-    name: string;
-    id: string;
-    statusCategory: StatusCategory;
-}
-
-interface Fields {
-    summary: string;
-    customfield_10006: string[];
-    status: Status;
-    customfield_10004: number;
+    };
 }
 
 interface Issue {
-    expand: string;
     id: string;
-    self: string;
-    key: string;
-    fields: Fields;
-}
-
-interface RootObject {
-    expand: string;
-    startAt: number;
-    maxResults: number;
-    total: number;
-    issues: Issue[];
+    summary: string;
+    storyPoints?: number;
+    color: string;
 }

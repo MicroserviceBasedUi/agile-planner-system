@@ -18,7 +18,6 @@ interface SprintData {
 
 interface ChartData {
     sprints: Array<SprintData>;
-    release: Release;
 }
 
 @inject(Element, TaskQueue, HttpClient, EventAggregator)
@@ -29,34 +28,14 @@ export class ReleaseBurnup {
 
     private onReleaseScopeChanged(scope: ReleaseScope): void {
         const self = this;
-        Promise.all([
-            self.GetReleases(),
-            //self.GetSprints(),
-            self.GetPlannedStories()
-        ])
-            .then(values => ReleaseBurnup.GetChartData(scope, values[0], values[1]))
-            .then(data => ReleaseBurnup.createChartOptions(data, scope, DefaultBurndownChartOptions))
-            .then(s => {
-                $(this.element).find('.burnup-container').highcharts(s);
-            });
+
+        const data = ReleaseBurnup.GetChartData(scope);
+        const options = ReleaseBurnup.createChartOptions(data, scope, DefaultBurndownChartOptions);
+
+        $(this.element).find('.burnup-container').highcharts(options);
     }
 
-    private GetReleases(): Promise<Array<Release>> {
-        return this.http.fetch('http://localhost:8000/api/backlog/plannedreleases')
-            .then(response => <Promise<Array<Release>>>response.json())
-    }
-
-    private GetSprints(): Promise<Array<Sprint>> {
-        return this.http.fetch('http://localhost:8000/api/backlog/sprints')
-            .then(response => <Promise<Array<Sprint>>>response.json());
-    }
-
-    private GetPlannedStories(): Promise<Array<Story>> {
-        return this.http.fetch('http://localhost:8000/api/backlog/plannedstories')
-            .then(response => <Promise<Array<Story>>>response.json());
-    }
-
-    private static GetChartData(scope: ReleaseScope, releases: Array<Release>, stories: Array<Story>): Promise<ChartData> {
+    private static GetChartData(scope: ReleaseScope): ChartData {
         let minVelocity: number = 0;
         let maxVelocity: number = 0;
         let avgVelocity: number = 0;
@@ -120,14 +99,13 @@ export class ReleaseBurnup {
         });
 
         let data: ChartData = {
-            release: releases[0],
             sprints: sprintData
         };
 
-        return Promise.resolve<ChartData>(data);
+        return data;
     }
 
-    private static createChartOptions(data: ChartData, scope: ReleaseScope, settings: Options): Promise<Options> {
+    private static createChartOptions(data: ChartData, scope: ReleaseScope, settings: Options): Options {
         const minLine: Array<any> = [];
         const avgLine: Array<any> = [];
         const maxLine: Array<any> = [];
@@ -216,6 +194,6 @@ export class ReleaseBurnup {
                     width: 2 // Width of the line
                 });
 
-        return Promise.resolve<Options>(settings);
+        return settings;
     };
 }

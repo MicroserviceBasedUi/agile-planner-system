@@ -94,6 +94,7 @@
   },
   "dependencies": {
     "@types/highcharts": "^4.2.54",
+    "@types/moment": "^2.13.0",
     "aurelia-bootstrapper": "2.1.1",
     "aurelia-event-aggregator": "^1.0.1",
     "aurelia-fetch-client": "1.1.2",
@@ -113,6 +114,7 @@
     "font-awesome": "4.7.0",
     "highcharts": "^5.0.11",
     "isomorphic-fetch": "2.2.1",
-    "jquery": "3.2.1"
+    "jquery": "3.2.1",
+    "moment": "^2.18.1"
   }
 }

@@ -1,9 +1,9 @@
-import {bindable, inject} from "aurelia-framework";
-import {TaskQueue} from "aurelia-task-queue";
+import { bindable, inject } from "aurelia-framework";
+import { TaskQueue } from "aurelia-task-queue";
 import $ from "jquery";
-import { chart, Options } from 'highcharts';
+import { chart, Options, SeriesOptions } from 'highcharts';
 import 'highcharts';
-import {HttpClient, json} from 'aurelia-fetch-client';
+import { HttpClient, json } from 'aurelia-fetch-client';
 
 interface Release {
     name: string;
@@ -92,25 +92,25 @@ export class ReleaseBurnup {
             },
             series: [{
                 name: 'Minimum',
-                data: [[Date.UTC(2017,4,1),5], [Date.UTC(2017,4,10),10], [Date.UTC(2017,4,20),15]]
+                data: [[Date.UTC(2017, 4, 1), 5], [Date.UTC(2017, 4, 10), 10], [Date.UTC(2017, 4, 20), 15]]
             },
             {
                 name: 'Average',
-                data: [[Date.UTC(2017,4,1),10], [Date.UTC(2017,4,10),20], [Date.UTC(2017,4,20),30]]
+                data: [[Date.UTC(2017, 4, 1), 10], [Date.UTC(2017, 4, 10), 20], [Date.UTC(2017, 4, 20), 30]]
             },
             {
                 name: 'Maximum',
-                data: [[Date.UTC(2017,4,1),15], [Date.UTC(2017,4,10),30], [Date.UTC(2017,4,20),45]]
+                data: [[Date.UTC(2017, 4, 1), 15], [Date.UTC(2017, 4, 10), 30], [Date.UTC(2017, 4, 20), 45]]
             }]
         };
 
         const self = this;
         //this.taskQueue.queueMicroTask(() => {
-            Promise.all([
-                self.GetReleases(),
-                self.GetSprints(),
-                self.GetPlannedStories()
-            ])
+        Promise.all([
+            self.GetReleases(),
+            self.GetSprints(),
+            self.GetPlannedStories()
+        ])
             .then(values => ReleaseBurnup.GetChartData(values[0], values[1], values[2]))
             .then(data => ReleaseBurnup.createChartOptions(data, settings))
             .then(s => {
@@ -122,17 +122,17 @@ export class ReleaseBurnup {
 
     private GetReleases(): Promise<Array<Release>> {
         return this.http.fetch('http://localhost:8000/api/backlog/plannedreleases')
-                .then(response => <Promise<Array<Release>>>response.json())
+            .then(response => <Promise<Array<Release>>>response.json())
     }
 
     private GetSprints(): Promise<Array<Sprint>> {
         return this.http.fetch('http://localhost:8000/api/backlog/sprints')
-                .then(response => <Promise<Array<Sprint>>>response.json());
+            .then(response => <Promise<Array<Sprint>>>response.json());
     }
 
     private GetPlannedStories(): Promise<Array<Story>> {
         return this.http.fetch('http://localhost:8000/api/backlog/plannedstories')
-                .then(response => <Promise<Array<Story>>>response.json());
+            .then(response => <Promise<Array<Story>>>response.json());
     }
 
     private static GetChartData(releases: Array<Release>, sprints: Array<Sprint>, stories: Array<Story>): Promise<ChartData> {
@@ -143,54 +143,70 @@ export class ReleaseBurnup {
         const velocities: Array<number> = [];
         const sprintData: Array<SprintData> = [];
 
-// console.log(sprints);
-// console.log(releases);
-        for(let i=0; i<sprints.length; i++) {
+        const now = Date.now();
+        const completedSprints = sprints.filter(s => Date.parse(s.completedAt) < now)
+
+        for (let i = 0; i < completedSprints.length; i++) {
             let velocity: number = 0;
             sprints[i].stories.forEach(s => velocity += s.storyPoints);
 
             avgVelocity += velocity;
 
-            if(i == 0) {
+            if (i == 0) {
                 minVelocity = velocity;
             }
 
-            if(velocity < minVelocity) {
+            if (velocity < minVelocity) {
                 minVelocity = velocity;
             }
 
-            if(velocity > maxVelocity) {
+            if (velocity > maxVelocity) {
                 maxVelocity = velocity;
             }
         }
 
-        avgVelocity = Math.round(avgVelocity / sprints.length);
+        avgVelocity = Math.round(avgVelocity / completedSprints.length);
 
-        for(let i=0; i<sprints.length; i++) {
+        for (let i = 0; i < sprints.length; i++) {
             const sprint = sprints[i];
 
             const startDate = Date.parse(sprint.startedAt);
             console.log('start' + startDate);
             const completeDate = Date.parse(sprint.completedAt);
             console.log('complete' + completeDate);
+
+            let minVel = minVelocity;
+            let avgVel = avgVelocity;
+            let maxVel = maxVelocity;
+
+            if(Date.parse(sprints[i].completedAt) < now) {
+                let velocity: number = 0;
+                sprints[i].stories.forEach(s => velocity += s.storyPoints);
+
+                minVel = velocity;
+                avgVel = velocity;
+                maxVel = velocity;
+            }
+
             sprintData.push(
                 {
                     sprint: sprint.name,
                     startDate: startDate,
                     completeDate: completeDate,
-                    minimumVelocity: minVelocity,
-                    averageVelocity: avgVelocity,
-                    maximumVelocity: maxVelocity
+                    minimumVelocity: minVel,
+                    averageVelocity: avgVel,
+                    maximumVelocity: maxVel
                 }
             )
         }
+
         let data: ChartData = {
             release: releases[0],
             sprints: sprintData
         };
 
         console.log(data);
-        return Promise.resolve<ChartData>( data );
+        return Promise.resolve<ChartData>(data);
     }
 
     private static createChartOptions(data: ChartData, settings: Options): Promise<Options> {
@@ -202,6 +218,7 @@ export class ReleaseBurnup {
         let minSp: number = 0;
         let avgSp: number = 0;
         let maxSp: number = 0;
+        let currentSprintStart: number = 0;
 
         minLine.push([data.sprints[0].startDate, 0]);
         avgLine.push([data.sprints[0].startDate, 0]);
@@ -219,24 +236,60 @@ export class ReleaseBurnup {
             maxSp += s.maximumVelocity;
             const max = [s.completeDate, maxSp];
             maxLine.push(max);
+
+            if (s.startDate < Date.now()) {
+                currentSprintStart = s.startDate;
+            }
         });
 
         settings.series = [];
-        settings.series.push( {
-                name: 'Minimum',
-                data: minLine
-            });
+        settings.series.push(<SeriesOptions>{
+            name: 'Minimum',
+            data: minLine,
+            zoneAxis: 'x',
+            zones: [
+                {
+                    value: currentSprintStart,
+                    color: '#929a9f'
+                },
+                {
+                    dashStyle: 'dot',
+                    color: '#7fcc7f'
+                }
+            ]
+        });
 
-        settings.series.push( {
-                name: 'Average',
-                data: avgLine
-            });
+        settings.series.push(<SeriesOptions>{
+            name: 'Average',
+            data: avgLine,
+            zoneAxis: 'x',
+            zones: [
+                {
+                    value: currentSprintStart,
+                    color: '#929a9f'
+                },
+                {
+                    color: '#69caf9'
+                }
+            ]
+        });
 
-        settings.series.push( {
-                name: 'Maximum',
-                data: maxLine
-            });
-            console.log(settings.series);
+        settings.series.push(<SeriesOptions>{
+            name: 'Maximum',
+            data: maxLine,
+            zoneAxis: 'x',
+            zones: [
+                {
+                    value: currentSprintStart,
+                    color: '#929a9f'
+                },
+                {
+                    dashStyle: 'dot',
+                    color: '#f9c769'
+                }
+            ]
+        });
+        console.log(settings.series);
 
         // settings.xAxis.plotLines.push({
         //             color: 'red', // Color value
@@ -246,5 +299,5 @@ export class ReleaseBurnup {
         //         });
 
         return Promise.resolve<Options>(settings);
-     };
+    };
 }

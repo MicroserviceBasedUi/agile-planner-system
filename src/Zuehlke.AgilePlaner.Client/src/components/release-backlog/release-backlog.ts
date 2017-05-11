@@ -10,6 +10,7 @@ export class ReleaseBacklog {
     private minStoryPoints: number = 5;
     private meanStoryPoints: number = 18;
     private maxStoryPoints: number;
+    private promisePbis: Promise<Array<Issue>>;
 
     constructor(private http: HttpClient, private evenAggregator: EventAggregator, backlogApiRoot: string) {
         this.http.configure(config => {
@@ -17,11 +18,28 @@ export class ReleaseBacklog {
                 .useStandardConfiguration()
                 .withBaseUrl(backlogApiRoot);
         });
-        this.evenAggregator.subscribe(ReleaseVelocityChanged, this.eventReceived);
+
+        this.promisePbis = this.fetchPbis().then(fetchedPbis => this.pbis = fetchedPbis);
+
+        this.evenAggregator.subscribe('ReleaseVelocityChanged', e => this.eventReceived(e));
     }
 
     eventReceived(event: ReleaseVelocityChanged): void {
+        let spCount = 0;
 
+        this.promisePbis.then(pbis => {
+            this.pbis.forEach(pbi => {
+
+                spCount += pbi.storyPoints;
+                if (spCount <= this.minStoryPoints) {
+                    pbi.color = 'rgba(62, 199, 6, 0.29)';
+                } else if (spCount <= this.meanStoryPoints) {
+                    pbi.color = 'rgba(38, 38, 228, 0.52)';
+                } else {
+                    pbi.color = 'rgba(255, 0, 0, 0.25)';
+                }
+            })
+        });
     }
 
     async moveUp(pbi: Issue): Promise<void> {
@@ -34,22 +52,9 @@ export class ReleaseBacklog {
         console.log(`PBI ${pbi.id} moved up before PBI ${before.id}`);
     }
 
-    async created(): Promise<void> {
-        this.pbis = await (await this.http.fetch('backlog/remaining')).json();
-
-        let spCount = 0;
-
-        this.pbis.forEach(pbi => {
-            spCount += pbi.storyPoints;
-            if (spCount <= this.minStoryPoints) {
-                pbi.color = 'rgba(62, 199, 6, 0.29)';
-            } else if (spCount <= this.meanStoryPoints) {
-                pbi.color = 'rgba(38, 38, 228, 0.52)';
-            } else {
-                pbi.color = 'rgba(255, 0, 0, 0.25)';
-            }
-        });
-    };
+    fetchPbis(): Promise<Array<Issue>> {
+        return this.http.fetch('backlog/remaining').then(result => result.json());
+    }
 }
 
 interface Issue {

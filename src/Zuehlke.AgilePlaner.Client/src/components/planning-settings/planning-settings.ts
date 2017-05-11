@@ -2,6 +2,7 @@ import { Sprint, Release, Story, ReleaseScope } from '../shared';
 import { bindable, inject } from "aurelia-framework";
 import { HttpClient, json } from 'aurelia-fetch-client';
 import { EventAggregator } from 'aurelia-event-aggregator';
+import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
 
 @inject(HttpClient, EventAggregator)
 export class PlanningSettings {
@@ -47,6 +48,8 @@ export class PlanningSettings {
             });
 
             this.hub.publish('ReleaseScopeChanged', settings);
+            let data: ReleaseVelocityChanged = {minStoryPoints: 5, meanStoryPoints: 15, maxStoryPoints: 25};
+            this.hub.publish('ReleaseVelocityChanged', data);
         }
     }
 }

@@ -3,7 +3,7 @@
 
     <div class="backlog-container">
         <ul class="list-group">
-            <li style="background-color: ${pbi.color}" class="list-group-item" repeat.for="pbi of pbis">
+            <li css="background-color: ${pbi.color}" class="list-group-item" repeat.for="pbi of pbis">
                     <button style="margin-right: 20px" click.delegate="moveUp(pbi)">Up</button>${pbi.id} - ${pbi.summary}
                     <span class="badge">${pbi.storyPoints}</span>
             </li>

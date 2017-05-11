@@ -1,7 +1,7 @@
 import { bindable, inject } from "aurelia-framework";
 import { TaskQueue } from "aurelia-task-queue";
 import $ from "jquery";
-import { chart, Options } from 'highcharts';
+import { chart, Options, SeriesOptions } from 'highcharts';
 import 'highcharts';
 import { HttpClient, json } from 'aurelia-fetch-client';
 
@@ -218,6 +218,7 @@ export class ReleaseBurnup {
         let minSp: number = 0;
         let avgSp: number = 0;
         let maxSp: number = 0;
+        let currentSprintStart: number = 0;
 
         minLine.push([data.sprints[0].startDate, 0]);
         avgLine.push([data.sprints[0].startDate, 0]);
@@ -235,22 +236,58 @@ export class ReleaseBurnup {
             maxSp += s.maximumVelocity;
             const max = [s.completeDate, maxSp];
             maxLine.push(max);
+
+            if (s.startDate < Date.now()) {
+                currentSprintStart = s.startDate;
+            }
         });
 
         settings.series = [];
-        settings.series.push({
+        settings.series.push(<SeriesOptions>{
             name: 'Minimum',
-            data: minLine
+            data: minLine,
+            zoneAxis: 'x',
+            zones: [
+                {
+                    value: currentSprintStart,
+                    color: '#929a9f'
+                },
+                {
+                    dashStyle: 'dot',
+                    color: '#7fcc7f'
+                }
+            ]
         });
 
-        settings.series.push({
+        settings.series.push(<SeriesOptions>{
             name: 'Average',
-            data: avgLine
+            data: avgLine,
+            zoneAxis: 'x',
+            zones: [
+                {
+                    value: currentSprintStart,
+                    color: '#929a9f'
+                },
+                {
+                    color: '#69caf9'
+                }
+            ]
         });
 
-        settings.series.push({
+        settings.series.push(<SeriesOptions>{
             name: 'Maximum',
-            data: maxLine
+            data: maxLine,
+            zoneAxis: 'x',
+            zones: [
+                {
+                    value: currentSprintStart,
+                    color: '#929a9f'
+                },
+                {
+                    dashStyle: 'dot',
+                    color: '#f9c769'
+                }
+            ]
         });
         console.log(settings.series);
 

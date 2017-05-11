@@ -1,7 +1,8 @@
-import { Sprint, Release, Story, ReleaseScope, Velocity } from '../shared';
+import { Sprint, Release, Story, ReleaseScope, Issue, Velocity } from '../shared';
 import { bindable, inject } from "aurelia-framework";
 import { HttpClient, json } from 'aurelia-fetch-client';
 import { EventAggregator } from 'aurelia-event-aggregator';
+import * as moment from 'moment';
 import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
 import { VelocityEnginge } from './velocity-engine';
 
@@ -10,22 +11,17 @@ export class PlanningSettings {
 
     public availableSprints: Array<Sprint> = [];
     private endSprintId: string;
+    private startDate: Date = new Date(2017, 0, 1);
+    private sprintLength: number = 2;
 
     private velocity: Velocity;
 
     private isInitialized = false;
 
     constructor(private http: HttpClient, private hub: EventAggregator, private velocityEnginge: VelocityEnginge) {
-
-        this.http.fetch('http://localhost:8000/api/backlog/sprints')
-            .then(response => <Promise<Array<Sprint>>>response.json())
-            .then(sprints => {
-                this.availableSprints = sprints;
-                this.selectedEndSprint = sprints[0].name;
-
-                const completedSprints = this.availableSprints.filter(s => Date.parse(s.completedAt) < Date.now());
-                this.velocity = this.velocityEnginge.CalculateVelocity(completedSprints);
-                this.isInitialized = true;
+        Promise.all([this.loadSprints(), this.loadRemainingStories()])
+            .then(values => {
+                this.prepareComponent(values[0], values[1]);
             });
     }
 
@@ -38,8 +34,44 @@ export class PlanningSettings {
         this.publishScope();
     }
 
+    set sprintLengthNumber(value) {
+        this.sprintLength = value;
+    }
+
+    get sprintLengthNumber() {
+        return this.sprintLength;
+    }
+
     get selectedEndSprint() {
         return this.endSprintId;
+    }
+
+    set startDateString(value) {
+        if (value != undefined) {
+            this.startDate = moment(value, 'YYYY-MM-DD').toDate();
+        }
+    }
+
+    get startDateString() {
+        return moment(this.startDate).format('YYYY-MM-DD');
+    }
+
+    private loadSprints(): Promise<Array<Sprint>> {
+        return this.http.fetch('http://localhost:8000/api/backlog/sprints')
+            .then(response => <Promise<Array<Sprint>>>response.json())
+    }
+
+    private loadRemainingStories(): Promise<Array<Issue>> {
+        return this.http.fetch('http://localhost:8000/api/backlog/remaining')
+            .then(response => <Promise<Array<Issue>>>response.json())
+    }
+
+    private prepareComponent(sprints: Array<Sprint>, remaining: Array<Issue>) {
+        this.availableSprints = sprints;
+        this.selectedEndSprint = sprints[0].name;
+        const completedSprints = this.availableSprints.filter(s => Date.parse(s.completedAt) < Date.now());
+        this.velocity = this.velocityEnginge.CalculateVelocity(completedSprints);
+        this.isInitialized = true;
     }
 
     private publishScope(): void {

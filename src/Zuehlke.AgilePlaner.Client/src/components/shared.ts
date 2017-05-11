@@ -33,6 +33,13 @@ export interface Velocity {
     average: number;
 }
 
+export interface Issue {
+    id: string;
+    summary: string;
+    storyPoints?: number;
+    color: string;
+}
+
 export const DefaultBurndownChartOptions: Options = {
 
             chart: {

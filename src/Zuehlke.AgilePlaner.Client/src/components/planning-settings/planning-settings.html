@@ -1,6 +1,14 @@
 <template>
     <require from = "../converters"></require>
     <form role="form" class="form-inline">
+         <div class="form-group">
+            <label for="startDate">Start Date</label>
+            <input id="startDate" type="date" value.bind="startDateString">
+        </div>
+        <div class="form-group">
+            <label for="sprintLength">Sprint Length (Weeks)</label>
+            <input id="sprintLength" type="number" value.bind="sprintLengthNumber">
+        </div>
         <div class="form-group">
             <label for="endSprint">Release after Sprint</label>
             <select id="endSprint" class="form-control" value.bind="selectedEndSprint">

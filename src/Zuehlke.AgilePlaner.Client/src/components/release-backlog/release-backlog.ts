@@ -1,11 +1,13 @@
 import { bindable, inject } from "aurelia-framework";
 import { HttpClient } from 'aurelia-fetch-client';
+import { EventAggregator } from 'aurelia-event-aggregator';
+import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
 
-@inject(HttpClient, 'backlogApiRoot')
+@inject(HttpClient, EventAggregator, 'backlogApiRoot')
 export class ReleaseBacklog {
     pbis: Array<Issue>;
 
-    constructor(private http: HttpClient, backlogApiRoot: string) {
+    constructor(private http: HttpClient, private evenAggregator: EventAggregator, backlogApiRoot: string) {
         this.http.configure(config => {
             config
                 .useStandardConfiguration()

@@ -1,5 +1,5 @@
 import { bindable, inject } from "aurelia-framework";
-import { HttpClient } from 'aurelia-fetch-client';
+import { HttpClient, json } from 'aurelia-fetch-client';
 import { EventAggregator } from 'aurelia-event-aggregator';
 import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
 
@@ -25,11 +25,19 @@ export class ReleaseBacklog {
     }
 
     eventReceived(event: ReleaseVelocityChanged): void {
-        let spCount = 0;
+        this.minStoryPoints = event.minStoryPoints;
+        this.maxStoryPoints = event.maxStoryPoints;
+        this.meanStoryPoints = event.meanStoryPoints;
 
         this.promisePbis.then(pbis => {
-            this.pbis.forEach(pbi => {
+            this.calculateColors();
+        });
+    }
 
+    calculateColors(){
+        let spCount = 0;
+
+        this.pbis.forEach(pbi => {
                 spCount += pbi.storyPoints;
                 if (spCount <= this.minStoryPoints) {
                     pbi.color = 'rgba(62, 199, 6, 0.29)';
@@ -38,8 +46,7 @@ export class ReleaseBacklog {
                 } else {
                     pbi.color = 'rgba(255, 0, 0, 0.25)';
                 }
-            })
-        });
+            });
     }
 
     async moveUp(pbi: Issue): Promise<void> {
@@ -49,6 +56,11 @@ export class ReleaseBacklog {
 
         // POST it to the backend
         const before = this.pbis[index - 1];
+        await this.http.fetch(`backlog/issue/${pbi.id}/rank`, { method: 'PUT', body: json({ rankBeforeIssue: before.id }) });
+        this.pbis = await this.fetchPbis();
+
+        this.calculateColors();
+
         console.log(`PBI ${pbi.id} moved up before PBI ${before.id}`);
     }
 

@@ -7,7 +7,6 @@ import { EventAggregator } from 'aurelia-event-aggregator';
 export class PlanningSettings {
 
     public availableSprints: Array<Sprint> = [];
-    private startSprintId: string;
     private endSprintId: string;
 
     constructor(private http: HttpClient, private hub: EventAggregator) {
@@ -17,19 +16,8 @@ export class PlanningSettings {
             .then(response => <Promise<Array<Sprint>>>response.json())
             .then(sprints => {
                 self.availableSprints = sprints;
-                self.selectedStartSprint = sprints[0].name;
                 self.selectedEndSprint = sprints[0].name;
             });
-    }
-
-    set selectedStartSprint(value) {
-        this.startSprintId = value;
-
-        this.publishScope();
-    }
-
-    get selectedStartSprint() {
-        return this.startSprintId;
     }
 
     set selectedEndSprint(value) {
@@ -43,18 +31,15 @@ export class PlanningSettings {
     }
 
     private publishScope(): void {
-        if (this.endSprintId != undefined && this.startSprintId != undefined) {
+        if (this.endSprintId != undefined) {
 
             const settings: ReleaseScope = {
                 sprints: this.availableSprints,
-                startSprint: null,
+                startSprint: this.availableSprints[0],
                 endSprint: null
             };
 
             this.availableSprints.forEach(sprint => {
-                if (sprint.name == this.startSprintId) {
-                    settings.startSprint = sprint;
-                }
 
                 if(sprint.name == this.endSprintId) {
                     settings.endSprint = sprint;

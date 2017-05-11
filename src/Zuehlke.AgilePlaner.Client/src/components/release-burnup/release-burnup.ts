@@ -27,8 +27,6 @@ export class ReleaseBurnup {
     }
 
     private onReleaseScopeChanged(scope: ReleaseScope): void {
-        const self = this;
-
         const data = ReleaseBurnup.GetChartData(scope);
         const options = ReleaseBurnup.createChartOptions(data, scope, DefaultBurndownChartOptions);
 
@@ -52,7 +50,7 @@ export class ReleaseBurnup {
 
             avgVelocity += velocity;
 
-            if (i == 0) {
+            if (i === 0) {
                 minVelocity = velocity;
             }
 

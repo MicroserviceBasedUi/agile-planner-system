@@ -7,14 +7,14 @@ import {HttpClient, json} from 'aurelia-fetch-client';
 
 interface Release {
     name: string;
-    releaseDate: Date,
-    startDate: Date
+    releaseDate: string,
+    startDate: string
 }
 
 interface Sprint {
     name: string;
-    startDate: Date,
-    completeDate: Date,
+    startedAt: string,
+    completedAt: string,
     stories: Array<Story>
 }
 
@@ -27,7 +27,8 @@ interface Story {
 
 interface SprintData {
     sprint: string;
-    completeDate: Date;
+    startDate: number;
+    completeDate: number;
     minimumVelocity: number;
     averageVelocity: number;
     maximumVelocity: number;
@@ -62,6 +63,9 @@ export class ReleaseBurnup {
             },
             xAxis: {
                 type: 'datetime',
+                labels: {
+                    format: '{value:%Y-%m-%d}'
+                },
                 plotLines: [{
                     color: 'red', // Color value
                     dashStyle: 'longdash', // Style of the plot line. Default to solid
@@ -109,7 +113,10 @@ export class ReleaseBurnup {
             ])
             .then(values => ReleaseBurnup.GetChartData(values[0], values[1], values[2]))
             .then(data => ReleaseBurnup.createChartOptions(data, settings))
-            .then(s => $(this.element).find('.burnup-container').highcharts(s));
+            .then(s => {
+                console.log(s.series);
+                $(this.element).find('.burnup-container').highcharts(s);
+            });
         //});
     }
 
@@ -136,6 +143,8 @@ export class ReleaseBurnup {
         const velocities: Array<number> = [];
         const sprintData: Array<SprintData> = [];
 
+// console.log(sprints);
+// console.log(releases);
         for(let i=0; i<sprints.length; i++) {
             let velocity: number = 0;
             sprints[i].stories.forEach(s => velocity += s.storyPoints);
@@ -155,14 +164,20 @@ export class ReleaseBurnup {
             }
         }
 
-        avgVelocity = avgVelocity / sprints.length;
+        avgVelocity = Math.round(avgVelocity / sprints.length);
 
         for(let i=0; i<sprints.length; i++) {
             const sprint = sprints[i];
+
+            const startDate = Date.parse(sprint.startedAt);
+            console.log('start' + startDate);
+            const completeDate = Date.parse(sprint.completedAt);
+            console.log('complete' + completeDate);
             sprintData.push(
                 {
                     sprint: sprint.name,
-                    completeDate: sprint.completeDate,
+                    startDate: startDate,
+                    completeDate: completeDate,
                     minimumVelocity: minVelocity,
                     averageVelocity: avgVelocity,
                     maximumVelocity: maxVelocity
@@ -187,6 +202,10 @@ export class ReleaseBurnup {
         let minSp: number = 0;
         let avgSp: number = 0;
         let maxSp: number = 0;
+
+        minLine.push([data.sprints[0].startDate, 0]);
+        avgLine.push([data.sprints[0].startDate, 0]);
+        maxLine.push([data.sprints[0].startDate, 0]);
 
         data.sprints.forEach(s => {
             minSp += s.minimumVelocity;
@@ -217,6 +236,7 @@ export class ReleaseBurnup {
                 name: 'Maximum',
                 data: maxLine
             });
+            console.log(settings.series);
 
         // settings.xAxis.plotLines.push({
         //             color: 'red', // Color value

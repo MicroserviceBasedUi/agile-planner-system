@@ -1,9 +1,9 @@
 <template>
-    <h1>Hallo Backlog</h1>
+    <h1>Release Backlog</h1>
 
     <div class="backlog-container">
         <ul>
-            <li repeat.for="pbi of pbis">${pbi.summary}</li>
+            <li repeat.for="pbi of pbis">${pbi.key} -  ${pbi.fields.summary}</li>
         </ul>
     </div>
 </template>

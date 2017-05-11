@@ -209,13 +209,13 @@ export class ReleaseBurnup {
             });
 
         settings.series.push( {
-                name: 'Maximum',
-                data: maxLine
+                name: 'Average',
+                data: avgLine
             });
 
         settings.series.push( {
-                name: 'Average',
-                data: avgLine
+                name: 'Maximum',
+                data: maxLine
             });
 
         // settings.xAxis.plotLines.push({

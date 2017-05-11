@@ -4,26 +4,7 @@ import $ from "jquery";
 import { chart, Options, SeriesOptions } from 'highcharts';
 import 'highcharts';
 import { HttpClient, json } from 'aurelia-fetch-client';
-
-interface Release {
-    name: string;
-    releaseDate: string,
-    startDate: string
-}
-
-interface Sprint {
-    name: string;
-    startedAt: string,
-    completedAt: string,
-    stories: Array<Story>
-}
-
-interface Story {
-    name: string;
-    storyPoints: number,
-    status: string,
-    priority: number;
-}
+import { Sprint, Release, Story } from '../shared';
 
 interface SprintData {
     sprint: string;

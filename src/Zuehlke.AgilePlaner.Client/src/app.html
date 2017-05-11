@@ -1,13 +1,20 @@
 <template>
 
     <insight-header></insight-header>
-
-    <div class="widget-box">
-        <require from="./components/release-burnup/release-burnup"></require>
-        <release-burnup></release-burnup>
-    </div>
-    <div class="widget-box">
-        <require from="./components/release-backlog/release-backlog"></require>
-        <release-backlog></release-backlog>
-    </div>
+    <div class="row">
+        <div class="widget-box">
+            <require from="./components/planning-settings/planning-settings"></require>
+            <planning-settings></planning-settings>
+        </div>
+        <div>
+            <div class="row">
+                <div class="widget-box">
+                    <require from="./components/release-burnup/release-burnup"></require>
+                    <release-burnup></release-burnup>
+                </div>
+                <div class="widget-box">
+                    <require from="./components/release-backlog/release-backlog"></require>
+                    <release-backlog></release-backlog>
+                </div>
+            </div>
 </template>

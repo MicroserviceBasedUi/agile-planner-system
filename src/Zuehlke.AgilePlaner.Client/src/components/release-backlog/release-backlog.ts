@@ -1,29 +1,21 @@
-import { bindable, inject, lazy } from "aurelia-framework";
+import { bindable, inject } from "aurelia-framework";
 import { HttpClient } from 'aurelia-fetch-client';
 
-// polyfill fetch client conditionally
-const fetchPolyfill = !self.fetch ? System.import('isomorphic-fetch') : Promise.resolve(self.fetch);
-
+@inject(HttpClient, 'backlogApiRoot')
 export class ReleaseBacklog {
     pbis: Array<Issue>;
-    http: HttpClient;
 
-    constructor( @lazy(HttpClient) private getHttpClient: () => HttpClient) {
+    constructor(private http: HttpClient, backlogApiRoot: string) {
+        this.http.configure(config => {
+            config
+                .useStandardConfiguration()
+                .withBaseUrl(backlogApiRoot);
+        });
     }
 
     async created(): Promise<void> {
-        // ensure fetch is polyfilled before we create the http client
-        await fetchPolyfill;
-        const http = this.http = this.getHttpClient();
-
-        http.configure(config => {
-            config
-                .useStandardConfiguration()
-                .withBaseUrl('http://localhost:8000/api/');
-        });
-
-        let response = await this.http.fetch('backlog/remaining');
-        this.pbis = this.sortIssue((await response.json()).issues);
+        let response = await (await this.http.fetch('backlog/remaining')).json();
+        this.pbis = this.sortIssue(response.issues);
     };
 
     sortIssue(issues: Array<Issue>): Array<Issue> {

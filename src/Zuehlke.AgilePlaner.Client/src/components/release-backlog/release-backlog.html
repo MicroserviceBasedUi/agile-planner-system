@@ -2,8 +2,11 @@
     <h1>Release Backlog</h1>
 
     <div class="backlog-container">
-        <ul>
-            <li repeat.for="pbi of pbis">${pbi.key} -  ${pbi.fields.summary}</li>
+        <ul class="list-group">
+            <li css="background-color: ${pbi.color}" class="list-group-item" repeat.for="pbi of pbis">
+                    <button style="margin-right: 20px" click.delegate="moveUp(pbi)">Up</button>${pbi.id} - ${pbi.summary}
+                    <span class="badge">${pbi.storyPoints}</span>
+            </li>
         </ul>
     </div>
 </template>

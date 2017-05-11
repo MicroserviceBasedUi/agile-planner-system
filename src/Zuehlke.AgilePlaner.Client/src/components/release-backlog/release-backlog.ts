@@ -1,5 +1,5 @@
 import { bindable, inject } from "aurelia-framework";
-import { HttpClient } from 'aurelia-fetch-client';
+import { HttpClient, json } from 'aurelia-fetch-client';
 import { EventAggregator } from 'aurelia-event-aggregator';
 import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
 
@@ -7,70 +7,71 @@ import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
 export class ReleaseBacklog {
     pbis: Array<Issue>;
 
+    private minStoryPoints: number = 5;
+    private meanStoryPoints: number = 18;
+    private maxStoryPoints: number;
+    private promisePbis: Promise<Array<Issue>>;
+
     constructor(private http: HttpClient, private evenAggregator: EventAggregator, backlogApiRoot: string) {
         this.http.configure(config => {
             config
                 .useStandardConfiguration()
                 .withBaseUrl(backlogApiRoot);
         });
+
+        this.promisePbis = this.fetchPbis().then(fetchedPbis => this.pbis = fetchedPbis);
+
+        this.evenAggregator.subscribe('ReleaseVelocityChanged', e => this.eventReceived(e));
     }
 
-    async created(): Promise<void> {
-        let response = await (await this.http.fetch('backlog/remaining')).json();
-        this.pbis = this.sortIssue(response.issues);
-    };
+    eventReceived(event: ReleaseVelocityChanged): void {
+        this.minStoryPoints = event.minStoryPoints;
+        this.maxStoryPoints = event.maxStoryPoints;
+        this.meanStoryPoints = event.meanStoryPoints;
 
-    sortIssue(issues: Array<Issue>): Array<Issue> {
-        return issues.sort((a, b) => {
-            if (a.key < b.key) {
-                return -1;
-            }
-            if (a.key > b.key) {
-                return 1;
-            }
-
-            return 0;
+        this.promisePbis.then(pbis => {
+            this.calculateColors();
         });
     }
-}
 
+    calculateColors(){
+        let spCount = 0;
 
-interface StatusCategory {
-    self: string;
-    id: number;
-    key: string;
-    colorName: string;
-    name: string;
-}
+        this.pbis.forEach(pbi => {
+                spCount += pbi.storyPoints;
+                if (spCount <= this.minStoryPoints) {
+                    pbi.color = 'rgba(62, 199, 6, 0.29)';
+                } else if (spCount <= this.meanStoryPoints) {
+                    pbi.color = 'rgba(38, 38, 228, 0.52)';
+                } else {
+                    pbi.color = 'rgba(255, 0, 0, 0.25)';
+                }
+            });
+    }
 
-interface Status {
-    self: string;
-    description: string;
-    iconUrl: string;
-    name: string;
-    id: string;
-    statusCategory: StatusCategory;
-}
+    async moveUp(pbi: Issue): Promise<void> {
+        const index = this.pbis.findIndex(item => pbi.id === item.id);
 
-interface Fields {
-    summary: string;
-    customfield_10006: string[];
-    status: Status;
-    customfield_10004: number;
+        if (index === 0) return;
+
+        // POST it to the backend
+        const before = this.pbis[index - 1];
+        await this.http.fetch(`backlog/issue/${pbi.id}/rank`, { method: 'PUT', body: json({ rankBeforeIssue: before.id }) });
+        this.pbis = await this.fetchPbis();
+
+        this.calculateColors();
+
+        console.log(`PBI ${pbi.id} moved up before PBI ${before.id}`);
+    }
+
+    fetchPbis(): Promise<Array<Issue>> {
+        return this.http.fetch('backlog/remaining').then(result => result.json());
+    }
 }
 
 interface Issue {
-    expand: string;
     id: string;
-    self: string;
-    key: string;
-    fields: Fields;
-}
-
-interface RootObject {
-    expand: string;
-    startAt: number;
-    maxResults: number;
-    total: number;
-    issues: Issue[];
+    summary: string;
+    storyPoints?: number;
+    color: string;
 }

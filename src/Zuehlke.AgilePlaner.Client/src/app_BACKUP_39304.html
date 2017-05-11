@@ -1,5 +1,7 @@
 <template>
-    <insight-header activeApp="Agile Planner"></insight-header>
+<<<<<<< HEAD
+
+    <insight-header></insight-header>
     <div class="row">
         <div class="widget-box">
             <require from="./components/planning-settings/planning-settings"></require>
@@ -16,6 +18,15 @@
                     <release-backlog></release-backlog>
                 </div>
             </div>
-        </div>
+=======
+    <insight-header activeApp="Agile Planner"></insight-header>
+    <div class="widget-box">
+        <require from="./components/release-burnup/release-burnup"></require>
+        <release-burnup></release-burnup>
     </div>
+    <div class="widget-box">
+        <require from="./components/release-backlog/release-backlog"></require>
+        <release-backlog></release-backlog>
+    </div>
+>>>>>>> 4999705851aa4df386ee844d61cb7b1ee50a4332
 </template>

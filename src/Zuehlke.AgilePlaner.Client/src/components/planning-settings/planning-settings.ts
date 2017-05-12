@@ -1,11 +1,12 @@
-import { Sprint, Release, Story, ReleaseScope, Issue } from '../shared';
+import { Sprint, Release, Story, ReleaseScope, Issue, Velocity } from '../shared';
 import { bindable, inject } from "aurelia-framework";
 import { HttpClient, json } from 'aurelia-fetch-client';
 import { EventAggregator } from 'aurelia-event-aggregator';
 import * as moment from 'moment';
 import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
+import { VelocityEnginge } from './velocity-engine';
 
-@inject(HttpClient, EventAggregator)
+@inject(HttpClient, EventAggregator, VelocityEnginge)
 export class PlanningSettings {
 
     public availableSprints: Array<Sprint> = [];
@@ -14,18 +15,23 @@ export class PlanningSettings {
     private startDate: Date = new Date(2017, 0, 1);
     private sprintLength: number = 2;
 
-    constructor(private http: HttpClient, private hub: EventAggregator) {
+    private velocity: Velocity;
 
-        const self = this;
+    private isInitialized = false;
+
+    constructor(private http: HttpClient, private hub: EventAggregator, private velocityEnginge: VelocityEnginge) {
         Promise.all([this.loadSprints(), this.loadRemainingStories()])
             .then(values => {
-                self.prepareComponent(values[0], values[1]);
+                this.prepareComponent(values[0], values[1]);
             });
     }
 
     set selectedEndSprint(value) {
-        this.endSprintId = value;
+        if (!this.isInitialized) {
+            return;
+        }
 
+        this.endSprintId = value;
         this.publishScope();
     }
 
@@ -33,7 +39,7 @@ export class PlanningSettings {
         this.sprintLength = value;
     }
 
-    get sprintLengthNumber () {
+    get sprintLengthNumber() {
         return this.sprintLength;
     }
 
@@ -51,12 +57,12 @@ export class PlanningSettings {
         return moment(this.startDate).format('YYYY-MM-DD');
     }
 
-    private loadSprints() : Promise<Array<Sprint>> {
+    private loadSprints(): Promise<Array<Sprint>> {
         return this.http.fetch('http://localhost:8000/api/backlog/sprints')
             .then(response => <Promise<Array<Sprint>>>response.json())
     }
 
-    private loadRemainingStories() : Promise<Array<Issue>> {
+    private loadRemainingStories(): Promise<Array<Issue>> {
         return this.http.fetch('http://localhost:8000/api/backlog/remaining')
             .then(response => <Promise<Array<Issue>>>response.json())
     }
@@ -64,13 +70,19 @@ export class PlanningSettings {
     private prepareComponent(sprints: Array<Sprint>, remaining: Array<Issue>) {
         this.originalSprints = sprints;
 
+        const completedSprints = this.originalSprints.filter(s => Date.parse(s.completedAt) < Date.now());
+        this.velocity = this.velocityEnginge.CalculateVelocity(completedSprints);
+
         this.availableSprints = PlanningSettings.CalculateAvailableSprints(
             sprints,
             remaining,
             this.startDate,
-            this.sprintLength, 25);
+            this.sprintLength,
+            this.velocity.min);
 
         this.selectedEndSprint = this.availableSprints[0].name;
+
+        this.isInitialized = true;
     }
 
     private static CalculateAvailableSprints(sprints: Array<Sprint>, remaining: Array<Issue>, startDate: Date, sprintLength: number, minVelocity: number) : Array<Sprint> {
@@ -105,23 +117,23 @@ export class PlanningSettings {
     }
 
     private publishScope(): void {
-        if (this.endSprintId != undefined) {
+        if (this.endSprintId !== undefined) {
 
             const settings: ReleaseScope = {
                 sprints: this.availableSprints,
                 startSprint: this.availableSprints[0],
-                endSprint: null
+                endSprint: null,
+                velocity: this.velocity
             };
 
             this.availableSprints.forEach(sprint => {
-
-                if(sprint.name == this.endSprintId) {
+                if (sprint.name === this.endSprintId) {
                     settings.endSprint = sprint;
                 }
             });
 
             this.hub.publish('ReleaseScopeChanged', settings);
-            let data: ReleaseVelocityChanged = {minStoryPoints: 5, meanStoryPoints: 15, maxStoryPoints: 25};
+            let data: ReleaseVelocityChanged = { minStoryPoints: 5, meanStoryPoints: 15, maxStoryPoints: 25 };
             this.hub.publish('ReleaseVelocityChanged', data);
         }
     }

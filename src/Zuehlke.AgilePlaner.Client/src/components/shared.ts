@@ -24,6 +24,13 @@ export interface ReleaseScope {
     sprints: Array<Sprint>
     startSprint: Sprint;
     endSprint: Sprint;
+    velocity: Velocity;
+}
+
+export interface Velocity {
+    min: number;
+    max: number;
+    average: number;
 }
 
 export interface Issue {

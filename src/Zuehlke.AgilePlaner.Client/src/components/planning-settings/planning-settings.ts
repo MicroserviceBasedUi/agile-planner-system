@@ -70,7 +70,7 @@ export class PlanningSettings {
     }
 
     private loadSprints(): Promise<Array<Sprint>> {
-        return this.http.fetch('http://localhost:8000/api/backlog/sprints')
+        return this.http.fetch('http://localhost:8000/api/backlog/a-sprints')
             .then(response => <Promise<Array<Sprint>>>response.json())
     }
 

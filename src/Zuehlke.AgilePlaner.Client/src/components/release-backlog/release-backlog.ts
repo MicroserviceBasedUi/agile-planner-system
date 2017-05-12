@@ -26,6 +26,7 @@ export class ReleaseBacklog {
     }
 
     eventReceived(event: ReleaseVelocityChanged): void {
+        console.log('Event received' + event);
         this.minStoryPoints = event.minStoryPoints;
         this.maxStoryPoints = event.maxStoryPoints;
         this.meanStoryPoints = event.meanStoryPoints;

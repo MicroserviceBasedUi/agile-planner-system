@@ -91,7 +91,7 @@ export class PlanningSettings {
         this.isInitialized = true;
     }
 
-    private PrepareAvailableSprints() : void {
+    private PrepareAvailableSprints(): void {
         this.availableSprints = PlanningSettings.CalculateAvailableSprints(
             this.originalSprints,
             this.remainingStories,
@@ -102,7 +102,7 @@ export class PlanningSettings {
         this.selectedEndSprint = this.availableSprints[0].name;
     }
 
-    private static CalculateAvailableSprints(sprints: Array<Sprint>, remaining: Array<Issue>, startDate: Date, sprintLength: number, minVelocity: number) : Array<Sprint> {
+    private static CalculateAvailableSprints(sprints: Array<Sprint>, remaining: Array<Issue>, startDate: Date, sprintLength: number, minVelocity: number): Array<Sprint> {
         const today = moment();
         let remainingStoryPoints = 0;
         remaining.forEach(i => remainingStoryPoints += i.storyPoints);
@@ -111,12 +111,12 @@ export class PlanningSettings {
         const completedSprintAmount = Math.floor(today.diff(moment(startDate), 'week') / sprintLength);
 
         const availableSprints: Array<Sprint> = [];
-        for(let i = 0; i < completedSprintAmount + remainingSprintAmount; i++) {
+        for (let i = 0; i < completedSprintAmount + remainingSprintAmount; i++) {
             const startedAt = moment(startDate).add('weeks', sprintLength * i);
-            const completedAt = startedAt.add('weeks', sprintLength);
+            const completedAt = moment(startedAt).add('weeks', sprintLength);
             let stories: Array<Story> = [];
 
-            if(i < sprints.length) {
+            if (i < sprints.length) {
                 stories = sprints[i].stories;
             }
 
@@ -149,8 +149,16 @@ export class PlanningSettings {
                 }
             });
 
+            const now = moment();
+
+            const numberOfSprintsUntilRelease = this.availableSprints.filter(s => moment(s.completedAt) > now && moment(s.completedAt) <= moment(settings.endSprint.completedAt)).length;
+
             this.hub.publish('ReleaseScopeChanged', settings);
-            let data: ReleaseVelocityChanged = { minStoryPoints: 5, meanStoryPoints: 15, maxStoryPoints: 25 };
+            let data: ReleaseVelocityChanged = {
+                minStoryPoints: settings.velocity.min * numberOfSprintsUntilRelease,
+                meanStoryPoints: settings.velocity.average * numberOfSprintsUntilRelease,
+                maxStoryPoints: settings.velocity.max * numberOfSprintsUntilRelease
+            };
             this.hub.publish('ReleaseVelocityChanged', data);
         }
     }

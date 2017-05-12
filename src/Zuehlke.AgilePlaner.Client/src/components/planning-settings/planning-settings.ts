@@ -10,7 +10,9 @@ import { VelocityEnginge } from './velocity-engine';
 export class PlanningSettings {
 
     public availableSprints: Array<Sprint> = [];
+
     private originalSprints: Array<Sprint> = [];
+    private remainingStories: Issue[];
     private endSprintId: string;
     private startDate: Date = new Date(2017, 0, 1);
     private sprintLength: number = 2;
@@ -36,7 +38,13 @@ export class PlanningSettings {
     }
 
     set sprintLengthNumber(value) {
+        if (!this.isInitialized) {
+            return;
+        }
+
         this.sprintLength = value;
+
+        this.PrepareAvailableSprints();
     }
 
     get sprintLengthNumber() {
@@ -48,9 +56,13 @@ export class PlanningSettings {
     }
 
     set startDateString(value) {
-        if (value != undefined) {
-            this.startDate = moment(value, 'YYYY-MM-DD').toDate();
+        if (!this.isInitialized) {
+            return;
         }
+
+        this.startDate = moment(value, 'YYYY-MM-DD').toDate();
+
+        this.PrepareAvailableSprints();
     }
 
     get startDateString() {
@@ -69,20 +81,25 @@ export class PlanningSettings {
 
     private prepareComponent(sprints: Array<Sprint>, remaining: Array<Issue>) {
         this.originalSprints = sprints;
+        this.remainingStories = remaining;
 
         const completedSprints = this.originalSprints.filter(s => Date.parse(s.completedAt) < Date.now());
         this.velocity = this.velocityEnginge.CalculateVelocity(completedSprints);
 
+        this.PrepareAvailableSprints();
+
+        this.isInitialized = true;
+    }
+
+    private PrepareAvailableSprints() : void {
         this.availableSprints = PlanningSettings.CalculateAvailableSprints(
-            sprints,
-            remaining,
+            this.originalSprints,
+            this.remainingStories,
             this.startDate,
             this.sprintLength,
             this.velocity.min);
 
         this.selectedEndSprint = this.availableSprints[0].name;
-
-        this.isInitialized = true;
     }
 
     private static CalculateAvailableSprints(sprints: Array<Sprint>, remaining: Array<Issue>, startDate: Date, sprintLength: number, minVelocity: number) : Array<Sprint> {

@@ -9,6 +9,7 @@ import { ReleaseVelocityChanged } from '../../events/releaseVelocityChanged';
 export class PlanningSettings {
 
     public availableSprints: Array<Sprint> = [];
+    private originalSprints: Array<Sprint> = [];
     private endSprintId: string;
     private startDate: Date = new Date(2017, 0, 1);
     private sprintLength: number = 2;
@@ -61,8 +62,46 @@ export class PlanningSettings {
     }
 
     private prepareComponent(sprints: Array<Sprint>, remaining: Array<Issue>) {
-        this.availableSprints = sprints;
-        this.selectedEndSprint = sprints[0].name;
+        this.originalSprints = sprints;
+
+        this.availableSprints = PlanningSettings.CalculateAvailableSprints(
+            sprints,
+            remaining,
+            this.startDate,
+            this.sprintLength, 25);
+
+        this.selectedEndSprint = this.availableSprints[0].name;
+    }
+
+    private static CalculateAvailableSprints(sprints: Array<Sprint>, remaining: Array<Issue>, startDate: Date, sprintLength: number, minVelocity: number) : Array<Sprint> {
+        const today = moment();
+        let remainingStoryPoints = 0;
+        remaining.forEach(i => remainingStoryPoints += i.storyPoints);
+
+        const remainingSprintAmount = Math.ceil(remainingStoryPoints / minVelocity);
+        const completedSprintAmount = Math.floor(today.diff(moment(startDate), 'week') / sprintLength);
+
+        const availableSprints: Array<Sprint> = [];
+        for(let i = 0; i < completedSprintAmount + remainingSprintAmount; i++) {
+            const startedAt = moment(startDate).add('weeks', sprintLength * i);
+            const completedAt = startedAt.add('weeks', sprintLength);
+            let stories: Array<Story> = [];
+
+            if(i < sprints.length) {
+                stories = sprints[i].stories;
+            }
+
+            const sprint: Sprint = {
+                name: `Sprint ${i + 1}`,
+                startedAt: startedAt.toString(),
+                completedAt: completedAt.toString(),
+                stories: stories
+            }
+
+            availableSprints.push(sprint);
+        }
+
+        return availableSprints;
     }
 
     private publishScope(): void {
